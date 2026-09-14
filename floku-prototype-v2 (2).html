@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Floku — you choose first</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#10162A; --chalk:#F3EFE4; --chalk-dim:#A9B2C4;
+  --red:#E43D26; --amber:#F5A623; --sage:#9FBE9C;
+  --line:rgba(243,239,228,.14); --glass:rgba(16,22,42,.80);
+  --serif:'Fraunces',Charter,'Bitstream Charter',Georgia,'Liberation Serif',serif;
+  --sans:'Archivo','Liberation Sans',Helvetica,Arial,sans-serif;
+  --mono:'IBM Plex Mono','DejaVu Sans Mono','Liberation Mono',monospace;
+  --sheet-h:70vh;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);color:var(--chalk);background:var(--night);-webkit-font-smoothing:antialiased;font-size:15px}
+canvas#sky{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+h1{font-family:var(--serif);font-weight:600;font-size:31px;line-height:1.12;letter-spacing:-.4px}
+h1 em{font-style:italic;color:var(--amber);font-weight:400}
+h2{font-family:var(--serif);font-weight:600;font-size:22px;line-height:1.2;margin-bottom:6px}
+h3{font-family:var(--serif);font-weight:600;font-size:16px;margin-bottom:4px}
+.lede{font-size:13.5px;line-height:1.65;color:var(--chalk-dim);margin-top:13px}
+.hint{font-size:11.5px;color:rgba(243,239,228,.45);line-height:1.65;margin-top:6px}
+
+/* mobile chrome */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:6;height:calc(54px + env(safe-area-inset-top));
+  padding:env(safe-area-inset-top) 16px 0;display:flex;align-items:center;gap:9px;
+  background:linear-gradient(to bottom,rgba(11,16,32,.94),rgba(11,16,32,.5) 72%,transparent)}
+.topbar .mark{font-family:var(--serif);font-size:17px}
+.topbar .mark b{color:var(--red);font-weight:600}
+.topbar .stepno{font-family:var(--mono);font-size:10.5px;color:var(--red);letter-spacing:1px;margin-left:5px}
+.topbar .stepname{font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase;color:var(--chalk-dim)}
+.topbar .prog{margin-left:auto;display:flex;gap:3px}
+.topbar .prog i{width:10px;height:2px;background:rgba(243,239,228,.22);transition:.4s}
+.topbar .prog i.on{background:var(--red)}
+.sitetag{position:fixed;top:calc(58px + env(safe-area-inset-top));left:16px;z-index:5;
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.6px;color:var(--amber);
+  border:1px solid rgba(245,166,35,.45);background:rgba(245,166,35,.10);padding:3px 7px;border-radius:2px}
+.cfglink{position:fixed;right:14px;top:calc(60px + env(safe-area-inset-top));z-index:8;
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.8px;color:var(--chalk-dim);
+  background:rgba(16,22,42,.6);border:1px solid var(--line);border-radius:2px;padding:6px 8px;cursor:pointer}
+
+/* bottom sheet */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:7;height:var(--sheet-h);
+  background:var(--glass);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--line);border-radius:16px 16px 0 0;
+  box-shadow:0 -20px 60px rgba(0,0,0,.55);display:flex;flex-direction:column;
+  transition:transform .5s cubic-bezier(.6,0,.2,1),opacity .35s}
+.sheet.hidden{transform:translateY(105%);opacity:0;pointer-events:none}
+.grab{width:38px;height:4px;border-radius:2px;background:rgba(243,239,228,.26);margin:9px auto 2px;flex:none}
+.sheet-body{padding:12px 20px 8px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+.sheet-body::-webkit-scrollbar{width:3px}
+.sheet-body::-webkit-scrollbar-thumb{background:rgba(243,239,228,.2)}
+.sheet-foot{padding:12px 20px calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px;
+  align-items:center;border-top:1px solid var(--line);flex:none}
+
+.btn{font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;background:var(--red);
+  color:#fff;border:none;border-radius:3px;padding:14px 20px;min-height:48px;transition:.18s}
+.btn:hover{background:#F04A32}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn.ghost{background:none;color:var(--chalk-dim);border:1px solid var(--line);padding:14px 14px}
+.btn.ghost:hover{color:var(--chalk);background:rgba(243,239,228,.05)}
+.spacer{flex:1}
+
+.field{margin-bottom:15px}
+.field label{display:block;font-size:9.5px;letter-spacing:1.7px;text-transform:uppercase;color:var(--chalk-dim);margin-bottom:6px}
+.field input{width:100%;background:rgba(243,239,228,.05);border:none;border-bottom:1px solid var(--line);
+  color:var(--chalk);font-family:var(--sans);font-size:16px;padding:12px 4px;min-height:46px}
+.field input:focus{outline:none;border-bottom-color:var(--amber);background:rgba(245,166,35,.06)}
+.field input::placeholder{color:rgba(243,239,228,.28)}
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.tag{font-size:13.5px;padding:12px 15px;min-height:46px;border:1px solid var(--line);border-radius:3px;
+  cursor:pointer;color:var(--chalk-dim);background:none;font-family:inherit}
+.tag.sel{background:var(--chalk);color:var(--night);border-color:var(--chalk);font-weight:600}
+
+.tower{width:100%;display:block;margin:8px 0 2px}
+.tower .band{cursor:pointer}
+.tower .blk{fill:#5C4A34;stroke:#12172a;stroke-width:1;transition:fill .25s}
+.tower .band.sel .blk{fill:var(--amber)}
+.tower .lbl{font-family:var(--serif);font-size:13px;fill:var(--chalk-dim)}
+.tower .band.sel .lbl{fill:var(--amber)}
+.tower .sub{font-family:var(--mono);font-size:8.5px;fill:rgba(243,239,228,.4)}
+.compass{width:100%;max-width:262px;display:block;margin:4px auto 6px}
+.compass .sec{fill:rgba(243,239,228,.05);stroke:rgba(243,239,228,.14);stroke-width:1;cursor:pointer}
+.compass .sec.sel{fill:rgba(245,166,35,.55)}
+.compass text{font-family:var(--mono);font-size:9.5px;fill:var(--chalk-dim);pointer-events:none}
+.compass .sunpath{stroke:var(--amber);stroke-width:1;stroke-dasharray:2 4;fill:none;opacity:.5}
+
+.home{display:flex;align-items:center;gap:13px;padding:13px 12px;border:1px solid var(--line);
+  border-radius:3px;cursor:pointer;margin-bottom:9px;background:rgba(243,239,228,.02);min-height:74px}
+.home.sel{border-color:var(--amber);background:rgba(245,166,35,.09)}
+.home svg{width:50px;height:42px;flex:none;opacity:.85}
+.home .nm{font-size:14.5px;font-weight:600}
+.home .mt{font-family:var(--mono);font-size:10.5px;color:var(--chalk-dim);margin-top:3px}
+.home .pc{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--sage);text-align:right;line-height:1.5}
+
+.plan-strip{display:flex;gap:14px;align-items:center;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.plan-strip svg{width:82px;height:70px;flex:none;background:rgba(243,239,228,.06);padding:6px;border-radius:3px}
+.plan-strip .meta{font-family:var(--mono);font-size:10.5px;line-height:1.85;color:var(--chalk-dim)}
+.plan-strip .meta b{color:var(--chalk);font-weight:500}
+
+/* plain-language chain */
+.chain{margin:4px 0 2px}
+.link{display:flex;gap:13px;align-items:flex-start;padding:11px 0}
+.link .n{width:26px;height:26px;flex:none;border-radius:50%;background:rgba(243,239,228,.09);
+  border:1px solid var(--line);font-family:var(--mono);font-size:11px;display:flex;
+  align-items:center;justify-content:center;color:var(--chalk-dim);margin-top:1px}
+.link.big .n{background:var(--red);border-color:var(--red);color:#fff}
+.link .say{font-size:14px;line-height:1.55;flex:1}
+.link .say b{font-family:var(--mono);font-size:14px;color:var(--amber);font-weight:500;white-space:nowrap}
+.link .why{display:block;font-size:11.5px;color:rgba(243,239,228,.42);margin-top:3px;line-height:1.55}
+.link+.link{border-top:1px solid rgba(243,239,228,.07)}
+
+.bar{display:flex;height:8px;border-radius:2px;overflow:hidden;margin:14px 0 7px}
+.bar span{display:block}
+.barkey{display:flex;flex-wrap:wrap;gap:12px;font-family:var(--mono);font-size:9.5px;color:var(--chalk-dim)}
+.barkey i{display:inline-block;width:7px;height:7px;margin-right:5px}
+.headline{margin-top:18px;padding:16px 18px;border:1px solid rgba(159,190,156,.42);
+  background:rgba(159,190,156,.09);border-radius:3px}
+.headline .k{font-size:9.5px;letter-spacing:1.7px;text-transform:uppercase;color:var(--sage)}
+.headline .n{font-family:var(--serif);font-size:37px;font-weight:600;letter-spacing:-1px;margin-top:2px;line-height:1.05}
+.headline .s{font-family:var(--mono);font-size:10.5px;color:var(--chalk-dim);margin-top:4px;line-height:1.6}
+
+details.note{margin-top:14px;border:1px solid var(--line);border-radius:3px;background:rgba(243,239,228,.025)}
+details.note summary{cursor:pointer;padding:13px 15px;font-size:12.5px;color:var(--chalk-dim);min-height:46px;display:flex;align-items:center}
+details.note .in{padding:0 15px 15px;font-size:12.5px;line-height:1.7;color:var(--chalk-dim)}
+details.note .in b{color:var(--chalk)}
+.mini{width:100%;font-family:var(--mono);font-size:11px;margin-top:9px;border-collapse:collapse}
+.mini td{padding:6px 0;border-bottom:1px solid rgba(243,239,228,.08)}
+.mini td:last-child{text-align:right;color:var(--chalk)}
+.mini td:first-child{color:rgba(243,239,228,.45)}
+
+/* join */
+.stages{margin:13px 0 4px}
+.stg{display:flex;gap:12px;padding:13px 0;align-items:flex-start}
+.stg+.stg{border-top:1px solid rgba(243,239,228,.07)}
+.stg .dot{width:11px;height:11px;border-radius:50%;flex:none;margin-top:5px;background:rgba(243,239,228,.18)}
+.stg.now .dot{background:var(--red);box-shadow:0 0 0 4px rgba(228,61,38,.18)}
+.stg .t{font-size:14px;font-weight:600}
+.stg.later .t{color:rgba(243,239,228,.5)}
+.stg .d{font-size:11.5px;color:rgba(243,239,228,.44);margin-top:3px;line-height:1.6}
+.badge{font-family:var(--mono);font-size:8.5px;letter-spacing:.8px;padding:2px 6px;border-radius:2px;margin-left:6px}
+.badge.on{background:var(--red);color:#fff}
+.badge.off{background:rgba(243,239,228,.1);color:rgba(243,239,228,.42)}
+
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.box{border:1px solid var(--line);border-radius:3px;padding:13px}
+.box.yes{border-color:rgba(159,190,156,.4);background:rgba(159,190,156,.07)}
+.box.no{border-color:rgba(228,61,38,.35);background:rgba(228,61,38,.06)}
+.box .h{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px}
+.box.yes .h{color:var(--sage)}
+.box.no .h{color:var(--red)}
+.box ul{list-style:none;font-size:12px;line-height:1.7;color:var(--chalk-dim)}
+.box li{padding-left:11px;position:relative}
+.box li::before{content:"·";position:absolute;left:2px;color:rgba(243,239,228,.4)}
+
+.consent{display:flex;gap:11px;align-items:flex-start;margin-top:16px;padding:13px;
+  border:1px solid var(--line);border-radius:3px;cursor:pointer;background:rgba(243,239,228,.025)}
+.consent input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--red)}
+.consent span{font-size:12.5px;line-height:1.6;color:var(--chalk-dim)}
+
+.joined{text-align:center;padding:8px 0 4px}
+.joined .tick{width:60px;height:60px;border-radius:50%;border:2px solid var(--sage);margin:0 auto 15px;
+  display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--sage)}
+.joined .big{font-family:var(--serif);font-size:25px;font-weight:600;line-height:1.2}
+.joined .sub{font-size:13px;color:var(--chalk-dim);margin-top:8px;line-height:1.6}
+.ref{font-family:var(--mono);font-size:11px;color:var(--amber);border:1px dashed rgba(245,166,35,.45);
+  padding:9px 12px;border-radius:2px;margin-top:15px;display:inline-block}
+
+/* phase 2 */
+.nx{display:flex;gap:12px;padding:14px 13px;border:1px solid var(--line);border-radius:3px;
+  margin-bottom:9px;background:rgba(243,239,228,.02);position:relative}
+.nx.locked{opacity:.74}
+.nx .ic{width:30px;height:30px;flex:none;border-radius:3px;background:rgba(243,239,228,.07);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:14px}
+.nx .t{font-size:13.5px;font-weight:600;padding-right:56px}
+.nx .d{font-size:11.5px;color:rgba(243,239,228,.45);margin-top:3px;line-height:1.6}
+.nx .lock{position:absolute;right:11px;top:12px;font-family:var(--mono);font-size:8.5px;
+  letter-spacing:.8px;color:rgba(243,239,228,.4);border:1px solid rgba(243,239,228,.16);padding:2px 6px;border-radius:2px}
+.nx.live{border-color:rgba(159,190,156,.45);background:rgba(159,190,156,.07);opacity:1}
+.nx.live .lock{color:var(--sage);border-color:rgba(159,190,156,.45)}
+.vopt{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:12.5px}
+.vopt .nm{flex:none;width:92px;color:var(--chalk-dim)}
+.vopt .track{flex:1;height:7px;background:rgba(243,239,228,.09);border-radius:2px;overflow:hidden}
+.vopt .track i{display:block;height:100%;background:var(--amber)}
+.vopt .pc{font-family:var(--mono);font-size:11px;width:36px;text-align:right}
+
+/* flock chrome */
+.tabs{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));z-index:8;
+  display:flex;gap:6px;padding:0 14px;overflow-x:auto;opacity:0;pointer-events:none;transition:.4s;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs.on{opacity:1;pointer-events:auto}
+.tabs button{font-family:inherit;font-size:11.5px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--chalk-dim);background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--line);
+  border-radius:3px;padding:12px 14px;min-height:44px;cursor:pointer;white-space:nowrap;flex:none}
+.tabs button.sel{background:var(--red);color:#fff;border-color:var(--red)}
+.flocknav{position:fixed;left:14px;right:14px;bottom:calc(74px + env(safe-area-inset-bottom));
+  z-index:8;display:none;gap:8px}
+.flocknav.on{display:flex}
+.flocknav .btn{flex:1;font-size:13px;padding:13px 10px}
+
+.card{position:fixed;left:12px;right:12px;bottom:calc(134px + env(safe-area-inset-bottom));z-index:9;
+  background:var(--glass);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:6px;
+  padding:20px;opacity:0;pointer-events:none;transform:translateY(14px);transition:.3s}
+.card.on{opacity:1;pointer-events:auto;transform:none}
+.card .x{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--chalk-dim);
+  cursor:pointer;font-size:20px;width:40px;height:40px}
+.card h3{font-family:var(--serif);font-size:23px;font-weight:600}
+.card .kind{font-family:var(--mono);font-size:9px;letter-spacing:1.8px;color:rgba(243,239,228,.35);margin:2px 0 12px}
+.card .you{display:none;font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;color:var(--red);
+  border:1px solid rgba(228,61,38,.5);padding:5px 9px;margin-bottom:11px}
+.card.is-you .you{display:inline-block}
+.card table{width:100%;font-family:var(--mono);font-size:11.5px}
+.card td{padding:5px 0;vertical-align:top}
+.card td.k{color:rgba(243,239,228,.4);width:48%;font-size:9px;letter-spacing:1.1px;text-transform:uppercase;padding-right:10px}
+
+.toast{position:fixed;left:12px;right:12px;top:calc(64px + env(safe-area-inset-top));z-index:10;
+  background:var(--red);color:#fff;font-size:12.5px;font-weight:600;padding:12px 16px;border-radius:3px;
+  opacity:0;transform:translateY(-10px);transition:.45s;pointer-events:none;text-align:center}
+.toast.on{opacity:1;transform:none}
+
+/* configuration: desktop only */
+.cfg{position:fixed;inset:0;z-index:20;background:#0B1020;overflow-y:auto;display:none}
+.cfg.on{display:block}
+.cfg-in{max-width:1160px;margin:0 auto;padding:30px 34px 70px}
+.cfg h1{font-size:26px;margin-bottom:4px}
+.cfg .sub{font-size:13px;color:var(--chalk-dim);margin-bottom:4px}
+.cfg .close{position:fixed;right:26px;top:24px;background:none;border:1px solid var(--line);
+  color:var(--chalk-dim);border-radius:2px;padding:9px 13px;font-family:var(--mono);font-size:10.5px;cursor:pointer;z-index:2}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}
+.mast{border:1px solid var(--line);border-radius:4px;background:rgba(243,239,228,.022);padding-bottom:5px}
+.mast .mh{display:flex;align-items:baseline;gap:9px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.mast .mh h3{margin:0;font-size:15px}
+.mast .mh .tbl{font-family:var(--mono);font-size:9.5px;color:rgba(243,239,228,.36);margin-left:auto}
+.mast table{width:100%;border-collapse:collapse;font-size:12.5px}
+.mast th{text-align:left;font-family:var(--mono);font-size:9px;letter-spacing:1.1px;text-transform:uppercase;
+  color:rgba(243,239,228,.42);padding:9px 16px;font-weight:400;border-bottom:1px solid rgba(243,239,228,.08)}
+.mast td{padding:9px 16px;border-bottom:1px solid rgba(243,239,228,.055);color:var(--chalk-dim)}
+.mast td.n{font-family:var(--mono);text-align:right;color:var(--chalk)}
+.mast tr:last-child td{border-bottom:0}
+.mast input.cell{width:86px;background:rgba(243,239,228,.06);border:1px solid var(--line);border-radius:2px;
+  color:var(--chalk);font-family:var(--mono);font-size:12px;padding:6px 8px;text-align:right}
+.mast input.cell:focus{outline:none;border-color:var(--amber)}
+.cfg-note{margin-top:20px;border:1px solid rgba(245,166,35,.4);background:rgba(245,166,35,.07);
+  border-radius:4px;padding:16px 18px;font-size:13px;line-height:1.75;color:var(--chalk-dim)}
+.cfg-note b{color:var(--chalk)}
+.desk-only{display:none;padding:30px 22px;text-align:center}
+.desk-only .ic{font-size:32px;margin-bottom:12px}
+
+/* desktop layout */
+.rail{display:none}
+@media(min-width:901px){
+  :root{--sheet-h:auto}
+  .topbar{display:none}
+  .sitetag{top:20px;left:224px}
+  .cfglink{right:32px;top:22px}
+  .rail{display:flex;position:fixed;left:0;top:0;bottom:0;width:204px;z-index:3;
+    padding:26px 0 26px 26px;flex-direction:column;justify-content:center;pointer-events:none}
+  .rail .mk{font-family:var(--serif);font-size:20px;margin-bottom:18px}
+  .rail .mk b{color:var(--red)}
+  .rail .stage{display:flex;align-items:center;gap:11px;height:30px;font-size:11.5px;
+    color:rgba(243,239,228,.34);position:relative}
+  .rail .stage::before{content:"";width:7px;height:7px;border-radius:50%;
+    background:rgba(243,239,228,.22);flex:none;transition:all .5s}
+  .rail .stage::after{content:"";position:absolute;left:3px;top:22px;width:1px;height:15px;
+    background:rgba(243,239,228,.13)}
+  .rail .stage:last-child::after{display:none}
+  .rail .stage.on{color:var(--chalk)}
+  .rail .stage.on::before{background:var(--red);outline:4px solid rgba(228,61,38,.18)}
+  .rail .stage.p2{color:rgba(243,239,228,.24)}
+  .rail .p2head{font-family:var(--mono);font-size:8.5px;letter-spacing:1.4px;
+    color:rgba(243,239,228,.32);margin:14px 0 7px}
+  .sheet{left:auto;right:32px;top:50%;bottom:auto;transform:translateY(-50%);width:444px;
+    max-height:88vh;border-radius:5px;border:1px solid var(--line)}
+  .sheet.hidden{transform:translateY(-50%) translateX(40px)}
+  .grab{display:none}
+  .sheet-head{display:flex!important}
+  .sheet-body{padding:20px 26px 8px}
+  .sheet-foot{padding:14px 26px 20px}
+  .tabs{left:50%;right:auto;bottom:28px;transform:translateX(-50%);padding:0;width:auto}
+  .flocknav{left:50%;right:auto;transform:translateX(-50%);bottom:86px;width:418px}
+  .card{left:228px;right:auto;width:296px;top:50%;bottom:auto;transform:translateY(-50%) translateX(-20px)}
+  .card.on{transform:translateY(-50%)}
+  .toast{left:50%;right:auto;transform:translateX(-50%) translateY(-10px);width:auto;white-space:nowrap;top:24px}
+  .toast.on{transform:translateX(-50%)}
+}
+@media(max-width:900px){
+  .cfg .cfg-in{display:none}
+  .cfg .desk-only{display:block}
+  .cfg .close{display:none}
+}
+.sheet-head{display:none;align-items:baseline;gap:11px;padding:16px 26px 12px;border-bottom:1px solid var(--line);flex:none}
+.sheet-head .n{font-family:var(--mono);font-size:10.5px;color:var(--red);letter-spacing:1px}
+.sheet-head .t{font-size:10px;letter-spacing:1.9px;text-transform:uppercase;color:var(--chalk-dim)}
+.sheet-head .pg{margin-left:auto;display:flex;gap:3px}
+.sheet-head .pg i{width:12px;height:2px;background:rgba(243,239,228,.2)}
+.sheet-head .pg i.on{background:var(--red)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<canvas id="sky"></canvas>
+
+<div class="topbar">
+  <span class="mark">Flo<b>ku</b></span>
+  <span class="stepno" id="stepno">00</span>
+  <span class="stepname" id="stepname">The premise</span>
+  <span class="prog" id="prog"></span>
+</div>
+<div class="sitetag" id="sitetag">PLACEHOLDER SITE · NOT A REAL SCHEME</div>
+<button class="cfglink" id="cfgopen">CONFIGURATION</button>
+
+<nav class="rail" id="rail"></nav>
+
+<section class="sheet" id="sheet">
+  <div class="grab"></div>
+  <div class="sheet-head"><span class="n" id="dno">00</span><span class="t" id="dnm">The premise</span>
+    <span class="pg" id="dpg"></span></div>
+  <div class="sheet-body" id="body"></div>
+  <div class="sheet-foot" id="foot"></div>
+</section>
+
+<div class="flocknav" id="flocknav">
+  <button class="btn ghost" id="fn-back">Back</button>
+  <button class="btn" id="fn-next">What happens next</button>
+</div>
+<div class="tabs" id="tabs">
+  <button class="sel" data-g="">Free flock</button>
+  <button data-g="home">By home</button>
+  <button data-g="level">By level</button>
+  <button data-g="orient">By facing</button>
+  <button data-g="who">By who</button>
+</div>
+
+<div class="card" id="card">
+  <button class="x" id="cardx" aria-label="Close">×</button>
+  <div class="you">THIS IS YOU</div>
+  <h3 id="c-name"></h3><div class="kind">HOUSEHOLD · JOINED</div>
+  <table>
+    <tr><td class="k">Home</td><td id="c-home"></td></tr>
+    <tr><td class="k">Level</td><td id="c-level"></td></tr>
+    <tr><td class="k">Faces</td><td id="c-orient"></td></tr>
+    <tr><td class="k">Who</td><td id="c-who"></td></tr>
+    <tr><td class="k">Each adult / month</td><td id="c-cost"></td></tr>
+    <tr><td class="k">Reference</td><td id="c-id"></td></tr>
+  </table>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="cfg" id="cfg">
+  <button class="close" id="cfgclose">CLOSE ✕</button>
+  <div class="desk-only">
+    <div class="ic">▤</div>
+    <h2>Configuration is a desktop screen</h2>
+    <p class="lede">Master records are edited on a wider screen by the team running the scheme, not by
+    residents on a phone. Every other screen in Floku is built for mobile first.</p>
+    <div style="height:20px"></div>
+    <button class="btn" id="cfgback">Back to the journey</button>
+  </div>
+  <div class="cfg-in">
+    <h1>Configuration · master records</h1>
+    <p class="sub">Every number a resident sees is read from here. Nothing is written into the screens.</p>
+    <p class="hint">Desktop only, by design. Residents never reach this page. Change a value and every
+    result that used it is recalculated and re-labelled.</p>
+    <div class="cfg-grid" id="cfggrid"></div>
+    <div class="cfg-note" id="cfgnote"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ═════════ MASTER RECORDS — configuration, not code ═════════ */
+var HOMES={
+  '1b2p':{label:'1 Bed 2 Person',bed:1,slp:2,nifa:50,gifa:62.5,mix:.30},
+  '2b3p':{label:'2 Bed 3 Person',bed:2,slp:3,nifa:70,gifa:87.5,mix:.50},
+  '3b4p':{label:'3 Bed 4 Person',bed:3,slp:4,nifa:86,gifa:107.5,mix:.10},
+  '4b6p':{label:'4 Bed 6 Person',bed:4,slp:6,nifa:100,gifa:125,mix:.10}
+};
+var CFG={rate:3000,sitePct:0.80,interest:4.0,years:25,adults:2};
+var ORIENTS=['N','NE','E','SE','S','SW','W','NW'];
+var ORIENT_FULL={N:'North',NE:'North-East',E:'East',SE:'South-East',
+                 S:'South',SW:'South-West',W:'West',NW:'North-West'};
+var LEVELS=['High','Mid','Low'];
+var WHOS=['First time buyer','Student','Local Authority','Key worker'];
+var SITE={name:'Placeholder site',homes:75};
+
+var gbp=function(n){return '£'+Math.round(n).toLocaleString('en-GB')};
+
+/* ═════════ THE MATHS — six plain steps, no symbols ═════════ */
+function calc(key){
+  var h=HOMES[key];
+  var gross=h.gifa;                       // 1 how big
+  var build=gross*CFG.rate;               // 2 cost to build
+  var site=build*CFG.sitePct;             // 3 land and everything around it
+  var total=build+site;                   // 4 what it costs to make
+  var r=(CFG.interest/100)/12, n=CFG.years*12;   // 5 borrow it
+  var monthly = r===0 ? total/n
+    : total*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  var interest=monthly*n-total;
+  var perAdultMonth=monthly/CFG.adults;   // 6 split it
+  return {gross:gross,build:build,site:site,total:total,monthly:monthly,
+          interest:interest,repaidTotal:monthly*n,
+          perAdultMonth:perAdultMonth,perAdultYear:perAdultMonth*12,
+          flatOld:total*(CFG.interest/100)};
+}
+window.calc=calc;
+
+var me={name:'',who:'',level:'',orient:'',home:'',joined:false,ref:''};
+
+/* ═════════ FLOOR PLANS ═════════ */
+function plan(h,stroke){
+  var w='stroke="'+stroke+'" stroke-width="3.4" fill="none"';
+  var t='stroke="'+stroke+'" stroke-width="1.2" fill="none" opacity=".65"';
+  var inner={
+    '1b2p':'<line x1="52" y1="4" x2="52" y2="52" '+w+'/><line x1="4" y1="52" x2="76" y2="52" '+w+'/><path d="M52 52 a14 14 0 0 1 14 14" '+t+'/>',
+    '2b3p':'<line x1="44" y1="4" x2="44" y2="46" '+w+'/><line x1="4" y1="46" x2="66" y2="46" '+w+'/><line x1="66" y1="30" x2="96" y2="30" '+w+'/><path d="M44 46 a13 13 0 0 1 13 13" '+t+'/>',
+    '3b4p':'<line x1="34" y1="4" x2="34" y2="42" '+w+'/><line x1="64" y1="4" x2="64" y2="42" '+w+'/><line x1="4" y1="42" x2="96" y2="42" '+w+'/><line x1="60" y1="42" x2="60" y2="80" '+w+'/><path d="M60 60 a13 13 0 0 0 -13 13" '+t+'/>',
+    '4b6p':'<line x1="32" y1="4" x2="32" y2="36" '+w+'/><line x1="64" y1="4" x2="64" y2="36" '+w+'/><line x1="4" y1="36" x2="96" y2="36" '+w+'/><line x1="34" y1="36" x2="34" y2="80" '+w+'/><line x1="4" y1="58" x2="34" y2="58" '+w+'/><path d="M34 62 a12 12 0 0 1 12 12" '+t+'/>'
+  }[h];
+  return '<svg viewBox="0 0 100 84"><rect x="4" y="4" width="92" height="76" '+w+'/>'+inner+'</svg>';
+}
+
+/* ═════════ SEEDED FLOCK ═════════ */
+var NAMES=['Alex','Tom','Fru','Louis','Grey','Jerry','Row','Sam','Vicks','Kit','Teg','William','Dee','Blue','Simple','White','Fred','Cards','Laila','Chair','Red','Shoo','Toni','Sarah','Loma','Pic','Forty','Car','Trey','Ruler','Nell','Ora','Pim','Quill','Rook','Sten','Ivy','Bran','Marl','Wren','Hale','Juno','Odin','Pearl','Rue','Sable','Tarn','Vale','Wisp','Yarn','Zeph','Ash','Bay','Cove','Dell','Ember','Fen','Gale','Heath'];
+var sd=99, rnd=function(){return (sd=(sd*16807)%2147483647)/2147483647};
+function wpick(o){var r=rnd(),a=0;for(var k in o){a+=o[k].mix;if(r<=a)return k}return '2b3p'}
+var birds=NAMES.map(function(n,i){return {
+  id:i+1,name:n,level:LEVELS[(rnd()*3)|0],orient:ORIENTS[(rnd()*8)|0],
+  who:WHOS[(rnd()*4)|0],home:wpick(HOMES),you:false,x:0,y:0,vx:0,vy:0};});
+
+/* ═════════ CANVAS ═════════ */
+var cv=document.getElementById('sky'),ctx=cv.getContext('2d');
+var W=0,H=0,DPR=Math.min(devicePixelRatio||1,2);
+function isPhone(){return W<901}
+function resize(){
+  W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;
+  cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);
+  computeCenters();
+}
+addEventListener('resize',resize);
+birds.forEach(function(b){b.x=Math.random()*innerWidth;b.y=Math.random()*innerHeight*0.5;
+  var a=Math.random()*6.28;b.vx=Math.cos(a)*1.6;b.vy=Math.sin(a)*1.6;});
+
+var groupKey='',centers={},focus=null,flockOpen=false;
+
+/* the sky the birds may use: above the sheet on mobile, left of it on desktop */
+function skyBox(){
+  if(!isPhone())return {x0:210,y0:10,x1:W-480,y1:H-20};
+  var top=56;
+  var bottom = flockOpen ? H-140 : H*0.30 - 6;
+  return {x0:12,y0:top,x1:W-12,y1:Math.max(top+80,bottom)};
+}
+function fieldCentre(){var b=skyBox();return {x:(b.x0+b.x1)/2,y:(b.y0+b.y1)/2}}
+function computeCenters(){
+  centers={};
+  if(!groupKey)return;
+  var bx=skyBox();
+  var vals=groupKey==='orient'?ORIENTS:birds.map(function(b){return b[groupKey]})
+    .filter(function(v,i,a){return a.indexOf(v)===i});
+  var cols=isPhone()?2:Math.ceil(Math.sqrt(vals.length));
+  var rows=Math.ceil(vals.length/cols);
+  var zw=bx.x1-bx.x0, zh=bx.y1-bx.y0;
+  vals.forEach(function(v,i){
+    centers[v]={
+      x:bx.x0+zw*((i%cols)+.5)/cols,
+      y:bx.y0+zh*((Math.floor(i/cols))+.5)/rows,
+      label:groupKey==='home'?HOMES[v].label:(groupKey==='orient'?ORIENT_FULL[v]:v),
+      n:birds.filter(function(b){return b[groupKey]===v}).length
+    };
+  });
+}
+var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+function stepSim(){
+  var F=fieldCentre(),bx=skyBox();
+  for(var i=0;i<birds.length;i++){
+    var b=birds[i],sx=0,sy=0,ax=0,ay=0,cx=0,cy=0,n=0;
+    for(var j=0;j<birds.length;j++){
+      var o=birds[j];if(o===b)continue;
+      var dx=o.x-b.x,dy=o.y-b.y,d2=dx*dx+dy*dy;
+      if(d2<3600&&d2>0){ax+=o.vx;ay+=o.vy;cx+=o.x;cy+=o.y;n++;
+        if(d2<420){sx-=dx/d2*22;sy-=dy/d2*22}}
+    }
+    if(n){b.vx+=(ax/n-b.vx)*0.045;b.vy+=(ay/n-b.vy)*0.045;
+          b.vx+=(cx/n-b.x)*0.0009;b.vy+=(cy/n-b.y)*0.0009;}
+    b.vx+=sx*0.05;b.vy+=sy*0.05;
+    var tx=F.x,ty=F.y,k=0.00050;
+    if(groupKey&&centers[b[groupKey]]){var c=centers[b[groupKey]];tx=c.x;ty=c.y;k=0.0062}
+    b.vx+=(tx-b.x)*k;b.vy+=(ty-b.y)*k;
+    b.vx+=(Math.random()-.5)*0.10;b.vy+=(Math.random()-.5)*0.10;
+    var sp=Math.hypot(b.vx,b.vy),max=groupKey?1.9:2.4,min=groupKey?0.15:0.9;
+    if(sp>max){b.vx=b.vx/sp*max;b.vy=b.vy/sp*max}
+    if(sp<min&&sp>0){b.vx=b.vx/sp*min;b.vy=b.vy/sp*min}
+    b.x+=b.vx;b.y+=b.vy;
+    b.x=Math.max(bx.x0+8,Math.min(bx.x1-8,b.x));
+    b.y=Math.max(bx.y0+8,Math.min(bx.y1-8,b.y));
+  }
+}
+
+function paint(){
+  ctx.clearRect(0,0,W,H);
+  var g2=ctx.createLinearGradient(0,0,0,H);
+  g2.addColorStop(0,'#0B1020');g2.addColorStop(.62,'#1B2440');g2.addColorStop(1,'#3A3350');
+  ctx.fillStyle=g2;ctx.fillRect(0,0,W,H);
+  var sun=ctx.createRadialGradient(W*.22,H*.92,0,W*.22,H*.92,H*.62);
+  sun.addColorStop(0,'rgba(245,166,35,.30)');sun.addColorStop(1,'rgba(245,166,35,0)');
+  ctx.fillStyle=sun;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#080C18';ctx.beginPath();ctx.moveTo(0,H);
+  var x=0,s=0;
+  while(x<W){var w=46+((s*37)%40),h=34+((s*61)%56);
+    ctx.lineTo(x,H-h);ctx.lineTo(x+w/2,H-h-16);ctx.lineTo(x+w,H-h);x+=w;s++}
+  ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+
+  if(groupKey){
+    var small=isPhone();
+    for(var v in centers){var c=centers[v];
+      var r=Math.max(small?32:52,Math.sqrt(c.n)*(small?16:26));
+      var hg=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,r);
+      hg.addColorStop(0,'rgba(245,166,35,.17)');hg.addColorStop(1,'rgba(245,166,35,0)');
+      ctx.fillStyle=hg;ctx.beginPath();ctx.arc(c.x,c.y,r,0,6.283);ctx.fill();
+      var ly=c.y+r+(small?26:16);
+      ctx.textAlign='center';ctx.lineJoin='round';
+      ctx.font=(small?'600 11.5px ':'600 12px ')+'Archivo,Liberation Sans,sans-serif';
+      ctx.strokeStyle='rgba(8,12,24,.85)';ctx.lineWidth=4;
+      ctx.strokeText(c.label,c.x,ly);
+      ctx.fillStyle='rgba(243,239,228,.95)';ctx.fillText(c.label,c.x,ly);
+      ctx.font=(small?'400 9.5px ':'400 10px ')+'IBM Plex Mono,monospace';
+      ctx.strokeStyle='rgba(8,12,24,.85)';ctx.lineWidth=3.5;
+      ctx.strokeText(c.n+(small?' homes':' households'),c.x,ly+14);
+      ctx.fillStyle='rgba(243,239,228,.55)';
+      ctx.fillText(c.n+(small?' homes':' households'),c.x,ly+14);
+    }
+  }
+  for(var i=0;i<birds.length;i++){
+    var b=birds[i],a=Math.atan2(b.vy,b.vx),sz=b.you?7.5:5;
+    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(a);
+    if(b.you){ctx.beginPath();ctx.arc(0,0,14+Math.sin(Date.now()/380)*4,0,6.283);
+      ctx.strokeStyle='rgba(228,61,38,.55)';ctx.lineWidth=1.2;ctx.stroke()}
+    ctx.beginPath();ctx.moveTo(sz*1.7,0);ctx.lineTo(-sz,sz*.8);
+    ctx.lineTo(-sz*.45,0);ctx.lineTo(-sz,-sz*.8);ctx.closePath();
+    ctx.fillStyle=b.you?'#E43D26':(focus===b?'#F5A623':'rgba(243,239,228,.82)');ctx.fill();
+    ctx.restore();
+    if((groupKey&&!isPhone())||b.you||focus===b){
+      ctx.fillStyle=b.you?'rgba(228,61,38,.95)':'rgba(243,239,228,.45)';
+      ctx.font='400 9.5px IBM Plex Mono,monospace';ctx.textAlign='center';
+      ctx.fillText(b.name,b.x,b.y+18);
+    }
+  }
+}
+function loop(){if(!reduce)stepSim();paint();requestAnimationFrame(loop)}
+
+var card=document.getElementById('card');
+function openCard(b){
+  var c=calc(b.home);
+  document.getElementById('c-name').textContent=b.name;
+  document.getElementById('c-home').textContent=HOMES[b.home].label;
+  document.getElementById('c-level').textContent=b.level;
+  document.getElementById('c-orient').textContent=ORIENT_FULL[b.orient];
+  document.getElementById('c-who').textContent=b.who;
+  document.getElementById('c-cost').textContent=gbp(c.perAdultMonth);
+  document.getElementById('c-id').textContent='FLK-'+String(b.id).padStart(3,'0');
+  card.classList.toggle('is-you',!!b.you);card.classList.add('on');
+}
+cv.addEventListener('click',function(e){
+  var best=null,bd=1e9;
+  birds.forEach(function(b){var d=Math.hypot(b.x-e.clientX,b.y-e.clientY);if(d<bd){bd=d;best=b}});
+  if(bd<30){focus=best;openCard(best)}else{focus=null;card.classList.remove('on')}
+});
+document.getElementById('cardx').onclick=function(){card.classList.remove('on');focus=null};
+
+/* ═════════ JOURNEY ═════════ */
+var body=document.getElementById('body'),foot=document.getElementById('foot'),
+    sheet=document.getElementById('sheet');
+var STEPS=[
+  {no:'00',nm:'The premise',       r:s0},
+  {no:'01',nm:'Who am I',          r:s1},
+  {no:'02',nm:'How high I live',   r:s2},
+  {no:'03',nm:'Which way I face',  r:s3},
+  {no:'04',nm:'My home',           r:s4},
+  {no:'05',nm:'What it costs',     r:s5},
+  {no:'06',nm:'Join the flock',    r:s6},
+  {no:'07',nm:'You are in',        r:s7},
+  {no:'08',nm:'The flock',         r:s8},
+  {no:'09',nm:'What happens next', r:s9}
+];
+var cur=0;
+document.getElementById('prog').innerHTML=STEPS.map(function(){return '<i></i>'}).join('');
+document.getElementById('dpg').innerHTML=STEPS.map(function(){return '<i></i>'}).join('');
+
+var RAIL=['You choose','Your numbers appear','You join the flock','The flock fills',
+          'P2','The flock votes','A site is chosen','A design is agreed','It gets built'];
+function drawRail(){
+  var stageOf = cur<=5?0 : (cur===6?1 : (cur===7?2 : 3));
+  var html='<div class="mk">Flo<b>ku</b></div>',k=0;
+  RAIL.forEach(function(t,i){
+    if(t==='P2'){html+='<div class="p2head">PHASE TWO · PREVIEW</div>';return}
+    var on=(k===stageOf), p2=(i>4);
+    html+='<div class="stage'+(on?' on':'')+(p2?' p2':'')+'">'+t+'</div>';k++;
+  });
+  document.getElementById('rail').innerHTML=html;
+}
+
+function go(i){
+  cur=i;var st=STEPS[i];
+  document.getElementById('stepno').textContent=st.no;
+  document.getElementById('stepname').textContent=st.nm;
+  document.getElementById('dno').textContent=st.no;
+  document.getElementById('dnm').textContent=st.nm;
+  [].forEach.call(document.getElementById('prog').children,function(el,j){el.classList.toggle('on',j<=i)});
+  [].forEach.call(document.getElementById('dpg').children,function(el,j){el.classList.toggle('on',j<=i)});
+  flockOpen=(i===8);
+  sheet.classList.toggle('hidden',flockOpen);
+  document.getElementById('tabs').classList.toggle('on',flockOpen);
+  document.getElementById('flocknav').classList.toggle('on',flockOpen);
+  if(!flockOpen){card.classList.remove('on');focus=null}
+  document.getElementById('sitetag').style.display=(i===0)?'none':'';
+  drawRail();computeCenters();
+  if(!flockOpen){body.innerHTML='';foot.innerHTML='';st.r();body.scrollTop=0}
+}
+function nav(back,next,fn,on){
+  if(on===undefined)on=true;
+  foot.innerHTML='';
+  if(back){var b=document.createElement('button');b.className='btn ghost';b.textContent=back;
+    b.onclick=function(){go(cur-1)};foot.appendChild(b)}
+  var sp=document.createElement('div');sp.className='spacer';foot.appendChild(sp);
+  var n=document.createElement('button');n.className='btn';n.textContent=next;n.disabled=!on;
+  n.onclick=fn;foot.appendChild(n);return n;
+}
+
+/* ── 00 ── */
+function s0(){
+  body.innerHTML=
+   '<h1>You are not the<br>last decision.<br><em>You are the first.</em></h1>'+
+   '<p class="lede">Housing normally picks the site, the numbers and the design — then looks for people to fill it.</p>'+
+   '<p class="lede">Floku runs it the other way round. You choose first. Your numbers appear straight away. '+
+   'The flock forms around what people actually chose, and that is what gets built.</p>'+
+   '<p class="hint" style="margin-top:16px">Every bird above is a household that has already chosen. '+
+   'Tap one to read its choices.</p>';
+  nav(null,'Start choosing',function(){go(1)});
+}
+
+/* ── 01 ── */
+function s1(){
+  body.innerHTML=
+   '<h2>Who am I?</h2><p class="hint">This is a decision seat, not a waiting list.</p>'+
+   '<div style="height:14px"></div>'+
+   '<div class="field"><label>Name</label><input id="i-name" placeholder="Your name" value="'+me.name+'" autocomplete="name"></div>'+
+   '<div class="field"><label>Mobile</label><input id="i-ph" type="tel" placeholder="07…" autocomplete="tel"></div>'+
+   '<div class="field"><label>Email</label><input id="i-em" type="email" placeholder="you@…" autocomplete="email"></div>'+
+   '<div class="field"><label>What am I</label><div class="tagrow" id="who"></div></div>';
+  var wrap=document.getElementById('who');
+  WHOS.concat(['Other']).forEach(function(v){
+    var b=document.createElement('button');b.className='tag'+(me.who===v?' sel':'');b.textContent=v;
+    b.onclick=function(){me.who=v;
+      [].forEach.call(wrap.children,function(c){c.classList.remove('sel')});
+      b.classList.add('sel');check()};
+    wrap.appendChild(b);
+  });
+  var nm=document.getElementById('i-name');
+  var btn=nav('Back','Next: level',function(){me.name=nm.value.trim()||'You';go(2)},false);
+  function check(){btn.disabled=!(nm.value.trim()&&me.who)}
+  nm.oninput=check;check();
+}
+
+/* ── 02 ── */
+function s2(){
+  body.innerHTML='<h2>How high do I live?</h2>'+
+   '<p class="hint">Height changes light, view, stairs — and who your neighbours are.</p>'+
+   '<svg class="tower" viewBox="0 0 300 210" id="tw"></svg>';
+  var tw=document.getElementById('tw');
+  var bands=[{v:'High',y:12,sub:'floors 7–9 · long views'},
+             {v:'Mid',y:78,sub:'floors 4–6 · balanced'},
+             {v:'Low',y:144,sub:'floors 1–3 · street level'}];
+  tw.innerHTML=bands.map(function(b){
+    var blocks=[0,1,2].map(function(r){return [0,1,2].map(function(c){
+      return '<rect class="blk" x="'+(20+c*30+((r%2)?7:0))+'" y="'+(b.y+r*19)+'" width="27" height="16" rx="1"/>';
+    }).join('')}).join('');
+    return '<g class="band'+(me.level===b.v?' sel':'')+'" data-v="'+b.v+'">'+
+      '<rect x="8" y="'+(b.y-6)+'" width="284" height="66" fill="transparent"/>'+blocks+
+      '<text class="lbl" x="128" y="'+(b.y+26)+'">'+b.v+'</text>'+
+      '<text class="sub" x="128" y="'+(b.y+42)+'">'+b.sub+'</text></g>';
+  }).join('');
+  var btn=nav('Back','Next: facing',function(){go(3)},!!me.level);
+  [].forEach.call(tw.querySelectorAll('.band'),function(g){g.onclick=function(){
+    me.level=g.dataset.v;
+    [].forEach.call(tw.querySelectorAll('.band'),function(x){x.classList.remove('sel')});
+    g.classList.add('sel');btn.disabled=false}});
+}
+
+/* ── 03 ── */
+function s3(){
+  body.innerHTML='<h2>Which way do I face?</h2>'+
+   '<p class="hint">The dotted arc is the sun\'s path. South takes the afternoon; north stays even and cool.</p>'+
+   '<svg class="compass" viewBox="0 0 200 200" id="cp"></svg>';
+  var cp=document.getElementById('cp'),R=88,r=34;
+  var out='<path class="sunpath" d="M 100 100 m -76 0 a 76 76 0 0 0 152 0"/>';
+  ORIENTS.forEach(function(o,i){
+    var a0=(i*45-22.5-90)*Math.PI/180,a1=(i*45+22.5-90)*Math.PI/180;
+    function pt(rad,ang){return [100+Math.cos(ang)*rad,100+Math.sin(ang)*rad]}
+    var A=pt(r,a0),B=pt(R,a0),C=pt(R,a1),D=pt(r,a1),L=pt((R+r)/2,(a0+a1)/2);
+    out+='<path class="sec'+(me.orient===o?' sel':'')+'" data-v="'+o+'" d="M'+A[0]+' '+A[1]+
+      ' L'+B[0]+' '+B[1]+' A'+R+' '+R+' 0 0 1 '+C[0]+' '+C[1]+
+      ' L'+D[0]+' '+D[1]+' A'+r+' '+r+' 0 0 0 '+A[0]+' '+A[1]+' Z"/>'+
+      '<text x="'+L[0]+'" y="'+(L[1]+3)+'" text-anchor="middle">'+o+'</text>';
+  });
+  out+='<circle cx="100" cy="100" r="4" fill="#F5A623"/>';
+  cp.innerHTML=out;
+  var btn=nav('Back','Next: my home',function(){go(4)},!!me.orient);
+  [].forEach.call(cp.querySelectorAll('.sec'),function(s){s.onclick=function(){
+    me.orient=s.dataset.v;
+    [].forEach.call(cp.querySelectorAll('.sec'),function(x){x.classList.remove('sel')});
+    s.classList.add('sel');btn.disabled=false}});
+}
+
+/* ── 04 ── */
+function s4(){
+  body.innerHTML='<h2>My home</h2>'+
+   '<p class="hint">Plan and price move together. Nothing here has been decided for you.</p>'+
+   '<div style="height:12px"></div><div id="hl"></div>';
+  var hl=document.getElementById('hl');
+  Object.keys(HOMES).forEach(function(k){
+    var h=HOMES[k],c=calc(k);
+    var d=document.createElement('div');d.className='home'+(me.home===k?' sel':'');
+    d.innerHTML=plan(k,'#F3EFE4')+
+      '<div><div class="nm">'+h.label+'</div>'+
+      '<div class="mt">'+h.nifa+' m² net · '+h.gifa+' m² gross</div></div>'+
+      '<div class="pc">'+gbp(c.perAdultMonth)+
+      '<br><span style="opacity:.55">each adult<br>per month</span></div>';
+    d.onclick=function(){me.home=k;
+      [].forEach.call(hl.children,function(x){x.classList.remove('sel')});
+      d.classList.add('sel');btn.disabled=false};
+    hl.appendChild(d);
+  });
+  var btn=nav('Back','See what it costs',function(){go(5)},!!me.home);
+}
+
+/* ── 05 the numbers, in six sentences ── */
+function s5(){
+  var h=HOMES[me.home],c=calc(me.home);
+  var bp=c.build/c.total*100, ip=c.interest/c.repaidTotal*100;
+  body.innerHTML=
+   '<div class="plan-strip">'+plan(me.home,'#F3EFE4')+
+   '<div class="meta"><b>'+h.label+'</b><br>'+h.bed+' bed · sleeps '+h.slp+'<br>'+
+   me.level+' · faces '+ORIENT_FULL[me.orient]+'<br>'+h.gifa+' m² gross</div></div>'+
+
+   '<h2>Six steps, that is all</h2>'+
+   '<p class="hint">No formula to decode. Each line is one sentence and one number.</p>'+
+
+   '<div class="chain">'+
+   '<div class="link"><div class="n">1</div><div class="say">Your home is <b>'+h.gifa+' m²</b> of building.'+
+   '<span class="why">Gross floor area — the flat plus its share of stairs, lifts and walls.</span></div></div>'+
+
+   '<div class="link"><div class="n">2</div><div class="say">Building costs <b>'+gbp(CFG.rate)+
+   '</b> for every m², so building yours costs <b>'+gbp(c.build)+'</b>.'+
+   '<span class="why">'+h.gifa+' × '+gbp(CFG.rate)+'. The rate is set once, on the configuration screen.</span></div></div>'+
+
+   '<div class="link"><div class="n">3</div><div class="say">Land and everything around the building adds <b>'+
+   (CFG.sitePct*100).toFixed(0)+'%</b> — another <b>'+gbp(c.site)+'</b>.'+
+   '<span class="why">Site purchase, roads, drains, planning and professional fees.</span></div></div>'+
+
+   '<div class="link"><div class="n">4</div><div class="say">So your home costs <b>'+gbp(c.total)+'</b> to make.'+
+   '<span class="why">Step 2 plus step 3. The real cost, before any borrowing.</span></div></div>'+
+
+   '<div class="link"><div class="n">5</div><div class="say">You borrow that over <b>'+CFG.years+
+   ' years</b> at <b>'+CFG.interest+'%</b>, so the repayment is <b>'+gbp(c.monthly)+'</b> a month.'+
+   '<span class="why">A normal repayment mortgage. Over '+CFG.years+' years you repay '+gbp(c.repaidTotal)+
+   ' in total, of which '+gbp(c.interest)+' is interest.</span></div></div>'+
+
+   '<div class="link big"><div class="n">6</div><div class="say"><b>'+CFG.adults+
+   ' earning adults</b> split it, so each pays <b>'+gbp(c.perAdultMonth)+'</b> a month.'+
+   '<span class="why">Change the number of adults on the configuration screen and every figure here moves with it.</span></div></div>'+
+   '</div>'+
+
+   '<div class="bar"><span style="width:'+bp+'%;background:var(--amber)"></span>'+
+   '<span style="width:'+(100-bp)+'%;background:var(--sage)"></span></div>'+
+   '<div class="barkey"><span><i style="background:var(--amber)"></i>BUILDING '+bp.toFixed(0)+'%</span>'+
+   '<span><i style="background:var(--sage)"></i>LAND &amp; AROUND IT '+(100-bp).toFixed(0)+'%</span></div>'+
+
+   '<div class="bar" style="margin-top:16px">'+
+   '<span style="width:'+(100-ip)+'%;background:rgba(243,239,228,.55)"></span>'+
+   '<span style="width:'+ip+'%;background:var(--red)"></span></div>'+
+   '<div class="barkey"><span><i style="background:rgba(243,239,228,.55)"></i>THE HOME '+
+   (100-ip).toFixed(0)+'%</span><span><i style="background:var(--red)"></i>INTEREST '+ip.toFixed(0)+'%</span></div>'+
+
+   '<div class="headline"><div class="k">Each adult pays, per month</div>'+
+   '<div class="n">'+gbp(c.perAdultMonth)+'</div>'+
+   '<div class="s">'+gbp(c.perAdultYear)+' a year · about '+gbp(c.perAdultMonth/4.33)+' a week</div></div>'+
+
+   '<details class="note"><summary>Does what other people chose change my price?</summary>'+
+   '<div class="in">Not here. Your price comes from the size of your own home and nothing else. '+
+   'There is a later idea — a popularity factor, where sought-after positions cost a little more and '+
+   'unpopular ones a little less. <b>It is switched off in this prototype</b> and needs a fairness '+
+   'decision before it is switched on. Nothing above is affected by it.</div></details>'+
+
+   '<details class="note"><summary>Why is the interest bigger than in the earlier version?</summary>'+
+   '<div class="in">The first prototype charged <b>'+CFG.interest+'% once</b> on the whole amount, which came to '+
+   gbp(c.flatOld)+'. A real '+CFG.years+'-year loan charges '+CFG.interest+
+   '% a year on what is still owed, which comes to <b>'+gbp(c.interest)+'</b>.'+
+   '<table class="mini"><tr><td>Earlier prototype, flat '+CFG.interest+'%</td><td>'+gbp(c.flatOld)+'</td></tr>'+
+   '<tr><td>Normal '+CFG.years+'-year mortgage</td><td>'+gbp(c.interest)+'</td></tr>'+
+   '<tr><td>Difference</td><td>'+gbp(c.interest-c.flatOld)+'</td></tr></table>'+
+   '<div style="height:9px"></div>Worth deciding deliberately. If Floku wants to show households a '+
+   'payment they could plan around, the mortgage figure is the honest one.</div></details>'+
+
+   '<p class="hint" style="margin-top:16px">You have seen the price before anyone has drawn a masterplan. '+
+   'That is the whole point.</p>';
+  nav('Change my choices','Join the flock',function(){go(6)});
+}
+
+/* ── 06 join the flock ── */
+function s6(){
+  var h=HOMES[me.home],c=calc(me.home);
+  var same=birds.filter(function(b){return b.home===me.home}).length;
+  body.innerHTML=
+   '<h2>Join the flock</h2>'+
+   '<p class="hint">Joining puts your choice on the board so the flock can form around it. '+
+   'It is not a purchase, and it does not hold a home for you.</p>'+
+
+   '<div class="plan-strip" style="margin-top:16px">'+plan(me.home,'#F3EFE4')+
+   '<div class="meta"><b>'+me.name+'</b><br>'+h.label+'<br>'+
+   me.level+' · faces '+ORIENT_FULL[me.orient]+'<br>'+
+   '<span style="color:var(--sage)">'+gbp(c.perAdultMonth)+' each adult / month</span></div></div>'+
+
+   '<div class="twocol">'+
+   '<div class="box yes"><div class="h">Joining does</div><ul>'+
+   '<li>Add your choice to the flock</li><li>Show who else chose the same</li>'+
+   '<li>Let you change or leave any time</li><li>Give you a vote in phase two</li></ul></div>'+
+   '<div class="box no"><div class="h">Joining does not</div><ul>'+
+   '<li>Take any money</li><li>Reserve a specific home</li>'+
+   '<li>Commit you to buying</li><li>Run a credit check</li></ul></div></div>'+
+
+   '<h3 style="margin-top:20px">Commitment comes in stages</h3>'+
+   '<div class="stages">'+
+   '<div class="stg now"><div class="dot"></div><div><div class="t">1 · Join the flock '+
+   '<span class="badge on">NOW</span></div>'+
+   '<div class="d">A stated choice. Free, non-binding, reversible.</div></div></div>'+
+   '<div class="stg later"><div class="dot"></div><div><div class="t">2 · Confirm intent '+
+   '<span class="badge off">PHASE 2</span></div>'+
+   '<div class="d">Once the flock is full enough to be viable, you say yes again with your numbers checked.</div></div></div>'+
+   '<div class="stg later"><div class="dot"></div><div><div class="t">3 · Reserve '+
+   '<span class="badge off">LATER</span></div>'+
+   '<div class="d">A held home on a real site, with a deposit and a contract. Not in this prototype.</div></div></div>'+
+   '</div>'+
+
+   '<label class="consent"><input type="checkbox" id="ok">'+
+   '<span>I understand this is a stated choice, not a purchase, and that the '+same+
+   ' other households in this prototype are simulated.</span></label>'+
+   '<p class="hint">Your name, contact and choices are stored against this flock only. '+
+   'Withdraw and your choice comes off the board.</p>';
+  var btn=nav('Back','Join the flock',join,false);
+  document.getElementById('ok').onchange=function(e){btn.disabled=!e.target.checked};
+}
+
+function join(){
+  var b=null;
+  birds.forEach(function(x){if(x.you)b=x});
+  var bx=skyBox();
+  if(!b){b={id:birds.length+1,you:true,x:(bx.x0+bx.x1)/2,y:bx.y1-14,vx:0,vy:-2};birds.push(b)}
+  b.name=me.name;b.level=me.level;b.orient=me.orient;b.who=me.who;b.home=me.home;
+  me.joined=true;me.ref='FLK-'+String(b.id).padStart(3,'0');
+  var same=birds.filter(function(x){return x.home===me.home&&x!==b}).length;
+  var t=document.getElementById('toast');
+  t.textContent=me.name+' joined — '+same+' others chose a '+HOMES[me.home].label;
+  t.classList.add('on');setTimeout(function(){t.classList.remove('on')},4200);
+  computeCenters();go(7);
+}
+
+/* ── 07 you are in ── */
+function s7(){
+  var h=HOMES[me.home];
+  var not=function(b){return !b.you};
+  var same=birds.filter(function(b){return b.home===me.home&&not(b)}).length;
+  var lvl=birds.filter(function(b){return b.level===me.level&&not(b)}).length;
+  var fac=birds.filter(function(b){return b.orient===me.orient&&not(b)}).length;
+  var total=birds.length, needed=Math.max(0,SITE.homes-total);
+  body.innerHTML=
+   '<div class="joined"><div class="tick">✓</div>'+
+   '<div class="big">'+me.name+', you are in the flock</div>'+
+   '<div class="sub">Your choice is on the board. Nothing is owed and nothing is held.</div>'+
+   '<div class="ref">'+me.ref+' · joined just now</div></div>'+
+   '<div style="height:20px"></div>'+
+   '<h3>What your choice did to the flock</h3>'+
+   '<table class="mini" style="margin-top:10px">'+
+   '<tr><td>Households in the flock</td><td>'+total+'</td></tr>'+
+   '<tr><td>Also chose '+h.label+'</td><td>'+same+'</td></tr>'+
+   '<tr><td>Also chose '+me.level+' level</td><td>'+lvl+'</td></tr>'+
+   '<tr><td>Also face '+ORIENT_FULL[me.orient]+'</td><td>'+fac+'</td></tr>'+
+   '<tr><td>Still needed for this scheme</td><td>'+needed+'</td></tr></table>'+
+   '<p class="hint" style="margin-top:14px">A flock of '+SITE.homes+' is what this scheme size needs. '+
+   'Until it fills, nothing is decided — and that is the honest thing to show a household.</p>';
+  nav('Back','See the whole flock',function(){go(8)});
+}
+
+/* ── 08 flock: canvas takes over ── */
+function s8(){}
+
+/* ── 09 phase two teaser ── */
+function s9(){
+  body.innerHTML=
+   '<h2>What the flock decides next</h2>'+
+   '<p class="hint">Everything up to here was you choosing. From here the flock chooses, together. '+
+   'This is a preview of phase two. It is not built.</p><div style="height:12px"></div>'+
+
+   '<div class="nx live"><div class="ic">◑</div><div><div class="t">The flock fills</div>'+
+   '<div class="d">'+birds.length+' of '+SITE.homes+' households so far. Joining keeps going until '+
+   'the mix is viable. You watch your own choice sit inside it the whole time.</div></div>'+
+   '<span class="lock">NOW</span></div>'+
+
+   '<div class="nx locked"><div class="ic">◷</div><div><div class="t">Viability gate</div>'+
+   '<div class="d">Enough households, the right mix of home sizes, enough confirmed intent. '+
+   'Until all three pass, the scheme does not move.</div></div><span class="lock">PHASE 2</span></div>'+
+
+   '<div class="nx locked"><div class="ic">▨</div><div><div class="t">The flock votes on a site</div>'+
+   '<div class="d">Two or three real sites, each showing what it would do to your monthly number. '+
+   'You vote knowing the price, not after it.</div></div><span class="lock">PHASE 2</span></div>'+
+
+   '<div class="nx locked"><div class="ic">◫</div><div><div class="t">The flock agrees the design</div>'+
+   '<div class="d">Architects put options to the people who will live there. Trade-offs shown as '+
+   'money and daylight, not adjectives.</div></div><span class="lock">PHASE 2</span></div>'+
+
+   '<div class="nx locked"><div class="ic">⚒</div><div><div class="t">Build partner and contract</div>'+
+   '<div class="d">Procurement, finance, legal structure. Where deposits, mortgages and reservations '+
+   'become real — and where regulated advice starts.</div></div><span class="lock">LATER</span></div>'+
+
+   '<div class="nx locked"><div class="ic">⌂</div><div><div class="t">It gets built, and you move in</div>'+
+   '<div class="d">The flock became the brief. That is the sentence this whole product exists to '+
+   'make true.</div></div><span class="lock">LATER</span></div>'+
+
+   '<h3 style="margin-top:20px">A taste of the vote</h3>'+
+   '<p class="hint">Illustrative only. Three invented sites, showing what the screen would do.</p>'+
+   '<div class="vopt"><span class="nm">Riverside</span><span class="track"><i style="width:46%"></i></span><span class="pc">46%</span></div>'+
+   '<div class="vopt"><span class="nm">Old Depot</span><span class="track"><i style="width:34%"></i></span><span class="pc">34%</span></div>'+
+   '<div class="vopt"><span class="nm">Mill Lane</span><span class="track"><i style="width:20%"></i></span><span class="pc">20%</span></div>'+
+   '<p class="hint" style="margin-top:12px">Each option would carry its own monthly figure, recalculated '+
+   'from the same six steps you already read. The maths does not change — only the site cost does.</p>'+
+
+   '<details class="note"><summary>Where does the first flow stop, exactly?</summary>'+
+   '<div class="in">It stops at <b>the flock fills</b>. Stages 00 to 08 are the first flow: choose, '+
+   'see your numbers, join, watch the flock. Everything below the viability gate needs decisions that '+
+   'have not been made — what makes a flock viable, who may vote, what a vote binds, and who is '+
+   'accountable for the site and the finance. Those are phase-two questions, and the prototype shows '+
+   'them locked rather than pretending.</div></details>';
+  nav('Back to the flock','Start again',function(){
+    me={name:'',who:'',level:'',orient:'',home:'',joined:false,ref:''};
+    for(var i=birds.length-1;i>=0;i--){if(birds[i].you)birds.splice(i,1)}
+    groupKey='';
+    [].forEach.call(document.querySelectorAll('#tabs button'),function(b,j){
+      b.classList.toggle('sel',j===0)});
+    computeCenters();go(0);
+  });
+}
+
+document.getElementById('fn-back').onclick=function(){go(7)};
+document.getElementById('fn-next').onclick=function(){go(9)};
+[].forEach.call(document.querySelectorAll('#tabs button'),function(btn){
+  btn.onclick=function(){
+    [].forEach.call(document.querySelectorAll('#tabs button'),function(b){b.classList.remove('sel')});
+    btn.classList.add('sel');groupKey=btn.dataset.g;
+    card.classList.remove('on');focus=null;computeCenters();
+  };
+});
+
+/* ═════════ CONFIGURATION (desktop) ═════════ */
+function drawCfg(){
+  var g=document.getElementById('cfggrid');
+  var homeRows=Object.keys(HOMES).map(function(k){var h=HOMES[k];
+    return '<tr><td>'+h.label+'</td><td class="n">'+h.bed+'</td><td class="n">'+h.slp+
+      '</td><td class="n">'+h.nifa+'</td><td class="n">'+
+      '<input class="cell" data-h="'+k+'" data-f="gifa" value="'+h.gifa+'"></td>'+
+      '<td class="n">'+(h.mix*100).toFixed(0)+'%</td></tr>';}).join('');
+  g.innerHTML=
+   '<div class="mast" style="grid-column:1/-1">'+
+   '<div class="mh"><h3>Home types</h3><span class="tbl">master · home_type</span></div>'+
+   '<table><thead><tr><th>Label</th><th style="text-align:right">Bed</th>'+
+   '<th style="text-align:right">Sleeps</th><th style="text-align:right">Net m²</th>'+
+   '<th style="text-align:right">Gross m²</th><th style="text-align:right">Mix</th></tr></thead>'+
+   '<tbody>'+homeRows+'</tbody></table></div>'+
+
+   '<div class="mast"><div class="mh"><h3>Cost and finance</h3>'+
+   '<span class="tbl">master · cost_model</span></div><table><tbody>'+
+   '<tr><td>Build rate, £ per m²</td><td class="n"><input class="cell" data-c="rate" value="'+CFG.rate+'"></td></tr>'+
+   '<tr><td>Land and around it, share of build</td><td class="n"><input class="cell" data-c="sitePct" value="'+CFG.sitePct+'"></td></tr>'+
+   '<tr><td>Interest rate, % a year</td><td class="n"><input class="cell" data-c="interest" value="'+CFG.interest+'"></td></tr>'+
+   '<tr><td>Loan term, years</td><td class="n"><input class="cell" data-c="years" value="'+CFG.years+'"></td></tr>'+
+   '<tr><td>Earning adults per home</td><td class="n"><input class="cell" data-c="adults" value="'+CFG.adults+'"></td></tr>'+
+   '</tbody></table></div>'+
+
+   '<div class="mast"><div class="mh"><h3>Scheme</h3><span class="tbl">master · scheme</span></div>'+
+   '<table><tbody>'+
+   '<tr><td>Site name</td><td class="n">'+SITE.name+'</td></tr>'+
+   '<tr><td>Is this a real site?</td><td class="n" style="color:var(--amber)">NO — PLACEHOLDER</td></tr>'+
+   '<tr><td>Homes needed for viability</td><td class="n"><input class="cell" data-s="homes" value="'+SITE.homes+'"></td></tr>'+
+   '<tr><td>Households in flock now</td><td class="n">'+birds.length+'</td></tr>'+
+   '<tr><td>Popularity factor</td><td class="n" style="color:var(--sage)">OFF</td></tr>'+
+   '</tbody></table></div>'+
+
+   '<div class="mast"><div class="mh"><h3>Level bands</h3><span class="tbl">master · level_band</span></div>'+
+   '<table><tbody>'+LEVELS.map(function(l){return '<tr><td>'+l+
+     '</td><td class="n">'+birds.filter(function(b){return b.level===l}).length+' in flock</td></tr>'}).join('')+
+   '</tbody></table></div>'+
+
+   '<div class="mast"><div class="mh"><h3>Orientation</h3><span class="tbl">master · orientation</span></div>'+
+   '<table><tbody>'+ORIENTS.map(function(o){return '<tr><td>'+ORIENT_FULL[o]+
+     '</td><td class="n">'+o+'</td></tr>'}).join('')+'</tbody></table></div>'+
+
+   '<div class="mast" style="grid-column:1/-1"><div class="mh"><h3>Household categories</h3>'+
+   '<span class="tbl">master · who_am_i</span></div><table><tbody>'+
+   WHOS.concat(['Other']).map(function(w){return '<tr><td>'+w+'</td><td class="n">'+
+     birds.filter(function(b){return b.who===w}).length+' in flock</td></tr>'}).join('')+
+   '</tbody></table></div>';
+
+  var ex=calc('2b3p');
+  document.getElementById('cfgnote').innerHTML=
+   '<b>Worked example, live from the values above.</b> A '+HOMES['2b3p'].label+' at '+
+   HOMES['2b3p'].gifa+' m² gross costs '+gbp(ex.build)+' to build, plus '+gbp(ex.site)+
+   ' for land and everything around it, so '+gbp(ex.total)+' to make. Over '+CFG.years+
+   ' years at '+CFG.interest+'% the repayment is '+gbp(ex.monthly)+' a month, of which '+
+   gbp(ex.interest)+' is interest across the whole term. Split between '+CFG.adults+
+   ' adults, each pays <b>'+gbp(ex.perAdultMonth)+' a month</b>.<div style="height:10px"></div>'+
+   'Change any figure and every screen a resident sees changes with it. No cost or rate is '+
+   'written into the journey screens.';
+
+  [].forEach.call(g.querySelectorAll('input.cell'),function(inp){
+    inp.onchange=function(){
+      var v=parseFloat(inp.value);if(isNaN(v))return;
+      if(inp.dataset.c)CFG[inp.dataset.c]=v;
+      if(inp.dataset.h)HOMES[inp.dataset.h][inp.dataset.f]=v;
+      if(inp.dataset.s)SITE[inp.dataset.s]=v;
+      drawCfg();
+      if(!flockOpen&&cur>0){body.innerHTML='';foot.innerHTML='';STEPS[cur].r()}
+    };
+  });
+}
+document.getElementById('cfgopen').onclick=function(){
+  drawCfg();document.getElementById('cfg').classList.add('on')};
+document.getElementById('cfgclose').onclick=function(){
+  document.getElementById('cfg').classList.remove('on')};
+document.getElementById('cfgback').onclick=function(){
+  document.getElementById('cfg').classList.remove('on')};
+
+resize();go(0);loop();
+</script>
+</body>
+</html>
